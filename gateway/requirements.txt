@@ -13,3 +13,5 @@ email-validator
 python-multipart
 duckduckgo-search
 langchain-ollama
+pytest
+pytest-asyncio
