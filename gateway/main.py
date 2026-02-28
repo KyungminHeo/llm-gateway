@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from core.dependencies import init_connections, close_connections
 from core.database import engine
-from router import chat, admin, auth, user
+from router import chat, admin, auth, user, conversation
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,6 +25,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(user.router, prefix="/api/user", tags=["User"])
+app.include_router(conversation.router, prefix="/api/conversations", tags=["Conversations"])
 
 @app.get("/health")
 async def health():

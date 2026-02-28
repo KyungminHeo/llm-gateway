@@ -11,6 +11,7 @@ from core.config import settings
 from core.database import Base
 from models.users import User
 from models.api_key import ApiKey
+from models.conversation import Conversation, Message
 
 config = context.config
 if config.config_file_name is not None:
