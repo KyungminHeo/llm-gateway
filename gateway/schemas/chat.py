@@ -8,7 +8,10 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     query: str
+    intent: str                                    # 의도 분류 결과 (search/analysis/creative/general)
     complexity: str
     model: str
     response: str
-    conversation_id: str                           
+    conversation_id: str
+    confidence: Optional[float] = None             # 분류 확신도
+    is_blocked: bool = False                       # 차단 여부
