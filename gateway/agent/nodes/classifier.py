@@ -6,7 +6,10 @@ LLM 기반 Intent Classifier 노드
       → 의도에 따라 적절한 모델과 복잡도를 자동 결정
 """
 import json
+import logging
 from langchain_ollama import ChatOllama
+
+logger = logging.getLogger(__name__)
 from langchain_core.messages import SystemMessage, HumanMessage
 from agent.state import AgentState
 from agent.nodes.intent_schema import (
@@ -74,8 +77,9 @@ async def classifier_node(state: AgentState) -> dict:
         if confidence < 0.7:
             intent = "general"
         
-    except (json.JSONDecodeError, Exception):
+    except Exception as e:
         # 파싱 실패 시 안전하게 general로 폴백
+        logger.warning("Intent 분류 실패, general로 폴백합니다: %s", e)
         intent = "general"
         confidence = 0.0
         classification = None

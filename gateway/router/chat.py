@@ -172,17 +172,19 @@ async def chat_stream(request: ChatRequest, current_user: User = Depends(get_cur
         모든 이벤트를 실시간으로 SSE 형식으로 전송
         """
         full_response = ""
-        current_intent = "general"
         is_blocked = False
+        used_model = ""
+        prompt_tokens = 0
+        completion_tokens = 0
 
         async for event in agent.astream_events(initial_state, version="v2"):
             kind = event["event"]
-            
+
             # 노드 시작 이벤트 — 현재 진행 상태를 클라이언트에 전송
             if kind == "on_chain_start" and event.get("name"):
                 node_name = event["name"]
                 # 주요 노드 진입 시 상태 알림
-                if node_name in ("input_guard", "classifier", "search_agent", 
+                if node_name in ("input_guard", "classifier", "search_agent",
                                  "analysis_agent", "creative_agent", "general_agent",
                                  "output_guard"):
                     status_map = {
@@ -206,13 +208,37 @@ async def chat_stream(request: ChatRequest, current_user: User = Depends(get_cur
                     full_response += content
                     yield f"data: {json.dumps({'token': content}, ensure_ascii=False)}\n\n"
 
+            # LLM 호출 완료 이벤트 — 토큰 사용량 누적
+            if kind == "on_chat_model_end":
+                output = event["data"].get("output")
+                if output and output.usage_metadata:
+                    prompt_tokens += output.usage_metadata.get("input_tokens", 0)
+                    completion_tokens += output.usage_metadata.get("output_tokens", 0)
+
+            # 그래프 최종 상태에서 모델명 및 차단 여부 추출
+            if kind == "on_chain_end" and event.get("name") == "LangGraph":
+                output = event["data"].get("output", {})
+                used_model = output.get("model", "")
+                is_blocked = output.get("is_blocked", False)
+
         # 스트림 완료 후 AI 응답 DB 저장
         await conversation_service.add_message(
             db, conversation.id, "assistant", full_response
         )
 
+        # 토큰 사용량 로깅 (차단되지 않은 경우만)
+        if not is_blocked:
+            await log_usage(
+                redis=redis,
+                user_id=current_user.id,
+                query=request.query,
+                model=used_model,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+            )
+
         # 스트리밍 종료 신호
-        yield f"data: {json.dumps({'token': '[DONE]', 'conversation_id': conversation.id})}\\n\\n"
+        yield f"data: {json.dumps({'token': '[DONE]', 'conversation_id': conversation.id})}\n\n"
 
     return StreamingResponse(
         event_generator(),

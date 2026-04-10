@@ -43,5 +43,5 @@ async def find_by_id_and_user(db: AsyncSession, conversation_id: str, user_id: s
 
 async def delete(db: AsyncSession, conversation: Conversation) -> None:
     """대화 삭제"""
-    await db.delete(conversation)
+    db.delete(conversation)
     await db.commit()

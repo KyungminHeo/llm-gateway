@@ -35,7 +35,7 @@ def create_refresh_token(user_id: str) -> str:
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 async def get_current_user(
-    credencials: HTTPAuthorizationCredentials = Depends(security_schema),
+    credentials: HTTPAuthorizationCredentials = Depends(security_schema),
     api_key_str: str = Depends(api_key_header),
     db: AsyncSession = Depends(get_db)
 ) -> User:
@@ -56,9 +56,9 @@ async def get_current_user(
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="사용자를 찾을 수 없습니다")
         return user
         
-    elif credencials:
+    elif credentials:
         # 2. JWT 검증
-        token = credencials.credentials
+        token = credentials.credentials
         try:
             payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
             user_id: str = payload.get("sub")

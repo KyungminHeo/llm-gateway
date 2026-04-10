@@ -1,5 +1,8 @@
+import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     # JWT 설정
@@ -36,3 +39,6 @@ class Settings(BaseSettings):
 
 # 싱글톤 인스턴스 — 앱 어디서든 import해서 사용
 settings = Settings()
+
+if settings.jwt_secret == "dev-secret-key-change-in-production":
+    logger.warning("JWT_SECRET이 기본값입니다. 프로덕션 환경에서는 반드시 .env에서 안전한 값으로 변경하세요.")
